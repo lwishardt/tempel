@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tempel des Schreckens – Leaderboard</title>
+<style>
+:root{--bg:#14110e;--panel:#1e1a15;--panel2:#272119;--line:#3a3126;--tx:#efe6d6;--mut:#a39682;--gold:#e0b04a;--silver:#c4c9d0;--bronze:#c9814a;--vil:#5fb37c;--imp:#d9534f;--r:10px}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.4 system-ui,Segoe UI,Roboto,sans-serif}
+header{padding:20px 16px 8px;max-width:1000px;margin:auto;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+h1{margin:0;font-size:22px;letter-spacing:.5px}h1 span{color:var(--gold)}
+#sync{font-size:12px;color:var(--mut);display:flex;align-items:center;gap:6px}#sync i{width:9px;height:9px;border-radius:50%;background:#777;display:inline-block}
+#sync.ok i{background:var(--vil)}#sync.err i{background:var(--imp)}#sync.local i{background:var(--gold)}
+nav{max-width:1000px;margin:auto;padding:0 16px;display:flex;gap:4px;border-bottom:1px solid var(--line);overflow-x:auto}
+nav button{background:none;border:0;color:var(--mut);padding:10px 14px;font-size:15px;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}
+nav button.on{color:var(--gold);border-color:var(--gold)}
+main{max-width:1000px;margin:auto;padding:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:14px;margin-bottom:14px}
+.podium{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.pod{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:14px;text-align:center;border-top:4px solid var(--c)}
+.pod .rk{font-size:26px}.pod .nm{font-weight:700;font-size:18px;margin:4px 0}.pod .pt{font-size:30px;font-weight:800;color:var(--c)}.pod small{color:var(--mut)}
+table{width:100%;border-collapse:collapse}th,td{padding:9px 8px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--mut);font-weight:600}
+th:nth-child(2),td:nth-child(2){text-align:left}td:first-child,th:first-child{text-align:center;width:44px}
+td.pts{font-weight:800;color:var(--gold);font-size:17px}.scroll{overflow-x:auto}
+.bar{display:inline-block;width:60px;height:6px;background:var(--panel2);border-radius:3px;vertical-align:middle;margin-left:6px;overflow:hidden}.bar b{display:block;height:100%;background:var(--vil)}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-left:2px}.dot.w{background:var(--vil)}.dot.l{background:var(--line)}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:10px}
+label{font-size:12px;color:var(--mut);display:block;margin-bottom:4px}
+input,select{background:var(--panel2);color:var(--tx);border:1px solid var(--line);border-radius:8px;padding:9px 10px;font-size:15px}
+button.b{background:var(--panel2);color:var(--tx);border:1px solid var(--line);border-radius:8px;padding:9px 14px;font-size:15px;cursor:pointer}
+button.b:hover{border-color:var(--gold)}button.pri{background:var(--gold);color:#1a1405;border-color:var(--gold);font-weight:700}button.dng{color:var(--imp)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}.chip{padding:8px 14px;border-radius:20px;border:1px solid var(--line);background:var(--panel2);cursor:pointer;user-select:none}
+.chip.on{border-color:var(--gold);background:#3a2f17;color:var(--gold)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}.seg button{background:var(--panel2);border:0;color:var(--mut);padding:8px 14px;font-size:14px;cursor:pointer}
+.seg button.v.on{background:var(--vil);color:#06210f}.seg button.i.on{background:var(--imp);color:#fff}
+.pl{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px dashed var(--line)}
+.hint{color:var(--mut);font-size:13px}.tag{font-size:12px;padding:2px 8px;border-radius:10px;margin:0 3px 3px 0;display:inline-block}
+.tag.V{background:#183a25;color:#8fe0a8}.tag.I{background:#4a1d1c;color:#ffaaa6}.tag.x{opacity:.45;text-decoration:line-through}
+.hist{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line)}
+.msg{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--gold);color:#1a1405;padding:10px 18px;border-radius:8px;font-weight:700;display:none;z-index:9}
+.warn{background:#3a2f17;border:1px solid var(--gold);padding:10px 12px;border-radius:8px;margin-bottom:14px;font-size:13px}
+@media(max-width:600px){.podium{gap:6px}.pod{padding:8px}.pod .pt{font-size:22px}.pod .nm{font-size:14px}}
+</style></head><body>
+<header><h1>🏰 TEMPEL DES <span>SCHRECKENS</span></h1><div id="sync"><i></i><span id="st">…</span></div></header>
+<nav id="nav"></nav><main id="app"></main><div class="msg" id="msg"></div>
+<script>
+/* ===== EINMAL EINTRAGEN: Firebase Realtime Database URL (siehe Anleitung) ===== */
+const DB_URL = "https://tempel-des-schreckens-a0632-default-rtdb.europe-west1.firebasedatabase.app";   // z.B. "https://tempel-xyz-default-rtdb.europe-west1.firebasedatabase.app"
+/* ================================================================================ */
+const SEED = [{"id": "r001", "date": "2026-06-25", "winner": "Impostor", "players": [{"p": "Malte", "r": "Impostor"}, {"p": "Jan", "r": "Impostor"}, {"p": "Tim", "r": "Villager"}, {"p": "Lukas", "r": "Villager"}]}, {"id": "r002", "date": "2026-06-25", "winner": "Impostor", "players": [{"p": "Tim", "r": "Impostor"}, {"p": "Lukas", "r": "Villager"}, {"p": "Jan", "r": "Villager"}, {"p": "Malte", "r": "Impostor"}]}, {"id": "r003", "date": "2026-06-25", "winner": "Impostor", "players": [{"p": "Tim", "r": "Impostor"}, {"p": "Malte", "r": "Villager"}, {"p": "Lukas", "r": "Villager"}, {"p": "Jan", "r": "Villager"}]}, {"id": "r004", "date": "2026-06-25", "winner": "Impostor", "players": [{"p": "Tim", "r": "Impostor"}, {"p": "Lukas", "r": "Impostor"}, {"p": "Malte", "r": "Villager"}, {"p": "Jan", "r": "Villager"}]}, {"id": "r005", "date": "2026-06-25", "winner": "Villager", "players": [{"p": "Lukas", "r": "Impostor"}, {"p": "Tim", "r": "Villager"}, {"p": "Malte", "r": "Villager"}, {"p": "Jan", "r": "Villager"}]}, {"id": "r006", "date": "2026-07-03", "winner": "Villager", "players": [{"p": "Lukas", "r": "Villager"}, {"p": "Malte", "r": "Villager"}, {"p": "Jan", "r": "Villager"}, {"p": "Tim", "r": "Impostor"}]}, {"id": "r007", "date": "2026-07-03", "winner": "Impostor", "players": [{"p": "Lukas", "r": "Impostor"}, {"p": "Tim", "r": "Impostor"}, {"p": "Malte", "r": "Villager"}, {"p": "Jan", "r": "Villager"}]}, {"id": "r008", "date": "2026-07-03", "winner": "Impostor", "players": [{"p": "Lukas", "r": "Impostor"}, {"p": "Malte", "r": "Villager"}, {"p": "Tim", "r": "Villager"}, {"p": "Jan", "r": "Impostor"}]}, {"id": "r009", "date": "2026-07-03", "winner": "Villager", "players": [{"p": "Lukas", "r": "Villager"}, {"p": "Malte", "r": "Impostor"}, {"p": "Tim", "r": "Villager"}, {"p": "Jan", "r": "Villager"}]}, {"id": "r010", "date": "2026-07-03", "winner": "Villager", "players": [{"p": "Malte", "r": "Impostor"}, {"p": "Jan", "r": "Impostor"}, {"p": "Lukas", "r": "Villager"}, {"p": "Tim", "r": "Villager"}]}, {"id": "r011", "date": "2026-07-03", "winner": "Impostor", "players": [{"p": "Jan", "r": "Impostor"}, {"p": "Lukas", "r": "Villager"}, {"p": "Malte", "r": "Villager"}, {"p": "Tim", "r": "Villager"}]}, {"id": "r012", "date": "2026-07-15", "winner": "Impostor", "players": [{"p": "Lukas", "r": "Impostor"}, {"p": "Malte", "r": "Villager"}, {"p": "Kevin", "r": "Impostor"}, {"p": "Tim", "r": "Villager"}]}, {"id": "r013", "date": "2026-07-15", "winner": "Impostor", "players": [{"p": "Malte", "r": "Impostor"}, {"p": "Kevin", "r": "Impostor"}, {"p": "Lukas", "r": "Villager"}, {"p": "Tim", "r": "Villager"}]}, {"id": "r014", "date": "2026-07-15", "winner": "Impostor", "players": [{"p": "Tim", "r": "Impostor"}, {"p": "Malte", "r": "Impostor"}, {"p": "Lukas", "r": "Villager"}, {"p": "Kevin", "r": "Villager"}]}, {"id": "r015", "date": "2026-07-15", "winner": "Impostor", "players": [{"p": "Lukas", "r": "Impostor"}, {"p": "Malte", "r": "Impostor"}, {"p": "Kevin", "r": "Villager"}, {"p": "Tim", "r": "Villager"}]}, {"id": "r016", "date": "2026-07-15", "winner": "Impostor", "players": [{"p": "Kevin", "r": "Impostor"}, {"p": "Malte", "r": "Impostor"}, {"p": "Lukas", "r": "Villager"}, {"p": "Tim", "r": "Villager"}]}, {"id": "r017", "date": "2026-07-15", "winner": "Villager", "players": [{"p": "Lukas", "r": "Villager"}, {"p": "Tim", "r": "Villager"}, {"p": "Malte", "r": "Impostor"}, {"p": "Kevin", "r": "Impostor"}]}, {"id": "r018", "date": "2026-07-15", "winner": "Impostor", "players": [{"p": "Kevin", "r": "Impostor"}, {"p": "Lukas", "r": "Impostor"}, {"p": "Malte", "r": "Villager"}, {"p": "Tim", "r": "Villager"}]}, {"id": "r019", "date": "2026-07-15", "winner": "Impostor", "players": [{"p": "Kevin", "r": "Impostor"}, {"p": "Lukas", "r": "Villager"}, {"p": "Malte", "r": "Villager"}, {"p": "Tim", "r": "Villager"}]}, {"id": "r020", "date": "2026-07-15", "winner": "Villager", "players": [{"p": "Tim", "r": "Villager"}, {"p": "Lukas", "r": "Villager"}, {"p": "Kevin", "r": "Villager"}, {"p": "Malte", "r": "Impostor"}]}, {"id": "r021", "date": "2026-07-15", "winner": "Villager", "players": [{"p": "Malte", "r": "Villager"}, {"p": "Lukas", "r": "Villager"}, {"p": "Kevin", "r": "Villager"}, {"p": "Tim", "r": "Impostor"}]}, {"id": "r022", "date": "2026-07-15", "winner": "Impostor", "players": [{"p": "Malte", "r": "Villager"}, {"p": "Lukas", "r": "Villager"}, {"p": "Tim", "r": "Villager"}, {"p": "Kevin", "r": "Impostor"}]}, {"id": "r023", "date": "2026-08-01", "winner": "Villager", "players": [{"p": "Lukas", "r": "Villager"}, {"p": "Oguzhan", "r": "Villager"}, {"p": "Jan", "r": "Villager"}, {"p": "Koni", "r": "Villager"}, {"p": "Malte", "r": "Impostor"}, {"p": "Kevin", "r": "Impostor"}]}, {"id": "r024", "date": "2026-08-01", "winner": "Impostor", "players": [{"p": "Lukas", "r": "Impostor"}, {"p": "Jan", "r": "Impostor"}, {"p": "Kevin", "r": "Villager"}, {"p": "Oguzhan", "r": "Villager"}, {"p": "Koni", "r": "Villager"}, {"p": "Malte", "r": "Villager"}]}, {"id": "r025", "date": "2026-09-26", "winner": "Impostor", "players": [{"p": "Oguzhan", "r": "Impostor"}, {"p": "Malte", "r": "Impostor"}, {"p": "Lukas", "r": "Impostor"}, {"p": "Kevin", "r": "Villager"}, {"p": "Koni", "r": "Villager"}, {"p": "Jan", "r": "Villager"}, {"p": "Tim", "r": "Villager"}]}, {"id": "r026", "date": "2026-09-26", "winner": "Villager", "players": [{"p": "Lukas", "r": "Villager"}, {"p": "Kevin", "r": "Villager"}, {"p": "Koni", "r": "Villager"}, {"p": "Jan", "r": "Villager"}, {"p": "Oguzhan", "r": "Impostor"}, {"p": "Tim", "r": "Impostor"}, {"p": "Malte", "r": "Impostor"}]}, {"id": "r027", "date": "2026-09-26", "winner": "Impostor", "players": [{"p": "Kevin", "r": "Impostor"}, {"p": "Koni", "r": "Impostor"}, {"p": "Jan", "r": "Impostor"}, {"p": "Lukas", "r": "Villager"}, {"p": "Malte", "r": "Villager"}, {"p": "Oguzhan", "r": "Villager"}, {"p": "Tim", "r": "Villager"}]}, {"id": "r028", "date": "2026-09-26", "winner": "Villager", "players": [{"p": "Kevin", "r": "Villager"}, {"p": "Malte", "r": "Villager"}, {"p": "Lukas", "r": "Villager"}, {"p": "Tim", "r": "Villager"}, {"p": "Koni", "r": "Villager"}, {"p": "Oguzhan", "r": "Impostor"}, {"p": "Jan", "r": "Impostor"}]}, {"id": "r029", "date": "2026-09-26", "winner": "Impostor", "players": [{"p": "Tim", "r": "Impostor"}, {"p": "Oguzhan", "r": "Impostor"}, {"p": "Lukas", "r": "Impostor"}, {"p": "Malte", "r": "Villager"}, {"p": "Kevin", "r": "Villager"}, {"p": "Jan", "r": "Villager"}, {"p": "Koni", "r": "Villager"}]}, {"id": "r030", "date": "2026-09-26", "winner": "Villager", "players": [{"p": "Tim", "r": "Villager"}, {"p": "Koni", "r": "Villager"}, {"p": "Malte", "r": "Villager"}, {"p": "Oguzhan", "r": "Villager"}, {"p": "Kevin", "r": "Impostor"}, {"p": "Lukas", "r": "Impostor"}, {"p": "Jan", "r": "Impostor"}]}, {"id": "r031", "date": "2026-09-26", "winner": "Villager", "players": [{"p": "Jan", "r": "Villager"}, {"p": "Malte", "r": "Villager"}, {"p": "Kevin", "r": "Villager"}, {"p": "Koni", "r": "Villager"}, {"p": "Tim", "r": "Impostor"}, {"p": "Lukas", "r": "Impostor"}, {"p": "Oguzhan", "r": "Impostor"}]}];
+const SEED_PLAYERS = ["David", "Jan", "Kevin", "Koni", "Luca", "Lukas", "Malte", "Oguzhan", "Tim"];
+const DEF_SET = {pv:2, pi:2, ps:3};
+let db = (DB_URL || (()=>{try{return localStorage.getItem('tds_db')||''}catch(e){return ''}})()).replace(/\/$/,'');
+let state = {rounds:{}, players:{}, settings:{...DEF_SET}}, tab='board', filter='all', edit=null, F=null, status='…', loaded=false, lastHash='', busy=0;
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const toast=t=>{const m=$('#msg');m.textContent=t;m.style.display='block';setTimeout(()=>m.style.display='none',2000)};
+const today=()=>new Date().toISOString().slice(0,10);
+const fmt=d=>d.split('-').reverse().join('.');
+const uid=()=>'r'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+const pkey=n=>n.replace(/[.$#\[\]\/]/g,'_');
+
+/* ---------- Persistenz / Sync ---------- */
+async function api(method,path,body){
+  if(!db){ // lokaler Modus
+    const k=path.split('/').filter(Boolean);
+    if(method==='GET')return null;
+    return null;
+  }
+  const r=await fetch(db+'/tempel/'+path+'.json',{method,body:body===undefined?undefined:JSON.stringify(body)});
+  if(!r.ok)throw new Error(r.status);return r.json();
+}
+function setStatus(c,t){const s=$('#sync');s.className=c;$('#st').textContent=t}
+function saveLocal(){try{localStorage.setItem('tds_data',JSON.stringify(state))}catch(e){}}
+function norm(raw){
+  raw=raw||{};const arr=o=>!o?[]:Array.isArray(o)?o.filter(Boolean):Object.values(o);
+  const rounds={};Object.entries(raw.rounds||{}).forEach(([id,r])=>{if(r)rounds[id]={...r,id,players:arr(r.players)}});
+  const players={};Object.entries(raw.players||{}).forEach(([k,v])=>{if(v)players[k]=v.name||k});
+  return {rounds,players,settings:{...DEF_SET,...(raw.settings||{})},seeded:raw.seeded};
+}
+async function pull(){
+  try{
+    if(!db){ if(!loaded){try{const l=JSON.parse(localStorage.getItem('tds_data'));if(l)state=l}catch(e){} if(!Object.keys(state.rounds).length)seedLocal();loaded=true;render()} setStatus('local','Lokaler Modus – nicht synchronisiert');return}
+    if(busy)return;
+    const raw=await api('GET','');const h=JSON.stringify(raw);
+    setStatus('ok','Live synchronisiert · '+new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit',second:'2-digit'}));
+    if(h!==lastHash){lastHash=h;const n=norm(raw);state=n;if(!raw||!raw.seeded){await seedDb()}loaded=true;if(!isEditing())render()}
+    else if(!loaded){loaded=true;render()}
+  }catch(e){setStatus('err','Keine Verbindung ('+e.message+') – neuer Versuch…')}
+}
+function isEditing(){return tab==='add'||document.activeElement&&['INPUT','SELECT'].includes(document.activeElement.tagName)}
+async function seedDb(){
+  const rounds={};SEED.forEach(r=>rounds[r.id]=r);const players={};SEED_PLAYERS.forEach(n=>players[pkey(n)]={name:n});
+  await api('PUT','',{rounds,players,settings:DEF_SET,seeded:true});lastHash='';
+}
+function seedLocal(){state.rounds={};SEED.forEach(r=>state.rounds[r.id]=r);state.players={};SEED_PLAYERS.forEach(n=>state.players[pkey(n)]=n);saveLocal()}
+async function saveRound(r){busy++;try{state.rounds[r.id]=r;if(db){await api('PUT','rounds/'+r.id,{date:r.date,winner:r.winner,players:r.players});
+  for(const p of r.players){if(!Object.values(state.players).includes(p.p)){state.players[pkey(p.p)]=p.p;await api('PUT','players/'+pkey(p.p),{name:p.p})}}}else saveLocal()}finally{busy--;lastHash=''}}
+async function delRound(id){busy++;try{delete state.rounds[id];if(db)await api('DELETE','rounds/'+id);else saveLocal()}finally{busy--;lastHash=''}}
+async function addPlayer(n){n=n.trim();if(!n||Object.values(state.players).includes(n))return;busy++;try{state.players[pkey(n)]=n;if(db)await api('PUT','players/'+pkey(n),{name:n});else saveLocal()}finally{busy--;lastHash=''}}
+async function saveSettings(){busy++;try{if(db)await api('PUT','settings',state.settings);else saveLocal()}finally{busy--;lastHash=''}}
+
+/* ---------- Berechnung ---------- */
+function pointsFor(r,p,set=state.settings){
+  const n=r.players.filter(x=>x.r==='Impostor').length, win=p.r===r.winner;
+  return {win,pts:!win?0:p.r==='Villager'?+set.pv:(n===1?+set.ps:+set.pi),solo:p.r==='Impostor'&&n===1}
+}
+function stats(){
+  const S={};Object.values(state.players).forEach(n=>S[n]={name:n,pts:0,g:0,w:0,vw:0,iw:0,sw:0,ig:0,F:[]});
+  const rs=Object.values(state.rounds).filter(r=>filter==='all'||r.date===filter).sort((a,b)=>a.date.localeCompare(b.date)||a.id.localeCompare(b.id));
+  rs.forEach(r=>r.players.forEach(p=>{const s=S[p.p]||(S[p.p]={name:p.p,pts:0,g:0,w:0,vw:0,iw:0,sw:0,ig:0,F:[]});const x=pointsFor(r,p);
+    s.g++;s.pts+=x.pts;s.F.push(x.win);if(p.r==='Impostor')s.ig++;
+    if(x.win){s.w++;if(p.r==='Villager')s.vw++;else if(x.solo)s.sw++;else s.iw++}}));
+  const l=Object.values(S).filter(s=>s.g>0).sort((a,b)=>b.pts-a.pts||b.w-a.w||a.g-b.g||a.name.localeCompare(b.name));
+  let rk=0;l.forEach((s,i)=>{if(i===0||s.pts!==l[i-1].pts)rk=i+1;s.rank=rk});return {list:l,rounds:rs.length}
+}
+const dates=()=>[...new Set(Object.values(state.rounds).map(r=>r.date))].sort().reverse();
+
+/* ---------- Views ---------- */
+function render(){
+  $('#nav').innerHTML=[['board','🏆 Rangliste'],['add',edit?'✏️ Runde bearbeiten':'➕ Runde eintragen'],['hist','📜 Verlauf'],['set','⚙️ Einstellungen']].map(([k,t])=>`<button class="${tab===k?'on':''}" onclick="go('${k}')">${t}</button>`).join('');
+  const a=$('#app');
+  if(!loaded){a.innerHTML='<p class="hint">Lade Daten…</p>';return}
+  a.innerHTML=(!db?'<div class="warn">⚠️ Lokaler Modus: Daten liegen nur in diesem Browser. Für gemeinsame Live-Daten: Einstellungen → Datenbank verbinden.</div>':'')+({board:vBoard,add:vAdd,hist:vHist,set:vSet}[tab])();
+}
+function go(t){if(t!=='add')edit=null,F=null;tab=t;render()}
+function vBoard(){
+  const {list,rounds}=stats(),medal={1:['🥇','var(--gold)'],2:['🥈','var(--silver)'],3:['🥉','var(--bronze)']};
+  const top=list.filter(s=>s.rank<=3).slice(0,3);
+  const opts=`<option value="all">Gesamt</option>`+dates().map(d=>`<option value="${d}" ${filter===d?'selected':''}>Spieltag ${fmt(d)}</option>`).join('');
+  return `<div class="row"><div><label>Zeitraum</label><select onchange="filter=this.value;render()">${opts}</select></div><div class="hint" style="margin-top:18px">${rounds} Runden</div></div>
+  <div class="podium">${top.map(s=>`<div class="pod" style="--c:${medal[s.rank][1]}"><div class="rk">${medal[s.rank][0]}</div><div class="nm">${esc(s.name)}</div><div class="pt">${s.pts}</div><small>${s.w} Siege · ${s.g} Spiele</small></div>`).join('')}</div>
+  <div class="card scroll"><table><tr><th>#</th><th>Spieler</th><th>Pkt</th><th>Spiele</th><th>Siege</th><th>Sieg-%</th><th title="Villager-Siege">Vil.</th><th title="Impostor-Siege (mehrere Impostoren)">Imp.</th><th title="Solo-Impostor-Siege">Solo</th><th>Ø Pkt</th><th>Form</th></tr>
+  ${list.map(s=>{const pc=Math.round(s.w/s.g*100);return `<tr><td>${medal[s.rank]?medal[s.rank][0]:s.rank}</td><td><b>${esc(s.name)}</b></td><td class="pts">${s.pts}</td><td>${s.g}</td><td>${s.w}</td><td>${pc}%<span class="bar"><b style="width:${pc}%"></b></span></td><td>${s.vw}</td><td>${s.iw}</td><td>${s.sw}</td><td>${(s.pts/s.g).toFixed(2).replace('.',',')}</td><td>${s.F.slice(-5).map(w=>`<span class="dot ${w?'w':'l'}"></span>`).join('')}</td></tr>`}).join('')||'<tr><td colspan=11 class="hint">Noch keine Daten</td></tr>'}</table></div>
+  <p class="hint">Punkte: Villager-Sieg ${state.settings.pv} · Impostor-Sieg (mehrere Imp.) ${state.settings.pi} · Solo-Impostor-Sieg ${state.settings.ps} · Niederlage 0. Gleichstand = gleicher Rang (Tiebreak-Sortierung: mehr Siege, weniger Spiele).</p>`;
+}
+function newForm(){return {id:null,date:today(),winner:'Villager',roles:{}}}
+function vAdd(){
+  F=F||newForm();const names=Object.values(state.players).sort((a,b)=>a.localeCompare(b));const sel=Object.keys(F.roles);
+  const imps=sel.filter(n=>F.roles[n]==='Impostor').length;
+  const prev=sel.map(n=>({p:n,r:F.roles[n]}));
+  const ok=sel.length>=2&&imps>=1&&imps<sel.length;
+  let info='';if(sel.length){info=ok?(imps===1?'Solo-Impostor-Runde':imps+' Impostoren')+' – Punkte: '+prev.map(p=>{const x=pointsFor({players:prev,winner:F.winner},p);return esc(p.p)+' '+x.pts}).join(', '):'Mind. 2 Spieler, mind. 1 Impostor und 1 Villager nötig.'}
+  return `<div class="card"><div class="row"><div><label>Datum</label><input type="date" value="${F.date}" data-a="date"></div></div>
+  <label>Wer hat mitgespielt? (antippen)</label><div class="chips">${names.map(n=>`<span class="chip ${F.roles[n]?'on':''}" data-a="tog" data-n="${esc(n)}">${esc(n)}</span>`).join('')}
+  <span class="chip" data-a="newp">＋ neuer Spieler</span></div>
+  <div style="margin:14px 0">${sel.map(n=>`<div class="pl"><b>${esc(n)}</b><div class="seg"><button class="v ${F.roles[n]==='Villager'?'on':''}" data-a="role" data-n="${esc(n)}" data-r="Villager">Villager</button><button class="i ${F.roles[n]==='Impostor'?'on':''}" data-a="role" data-n="${esc(n)}" data-r="Impostor">Impostor</button></div></div>`).join('')}</div>
+  <label>Wer hat gewonnen?</label><div class="seg"><button class="v ${F.winner==='Villager'?'on':''}" data-a="win" data-r="Villager">Villager</button><button class="i ${F.winner==='Impostor'?'on':''}" data-a="win" data-r="Impostor">Impostor</button></div>
+  <p class="hint">${info}</p>
+  <div class="row"><button class="b pri" ${ok?'':'disabled style="opacity:.4"'} data-a="submit">${edit?'Änderungen speichern':'Runde speichern'}</button>${edit?'<button class="b" onclick="go(\'hist\')">Abbrechen</button>':''}</div></div>`;
+}
+function tog(n){if(F.roles[n])delete F.roles[n];else F.roles[n]='Villager';render()}
+function role(n,r){F.roles[n]=r;render()}
+function newP(){const n=prompt('Name des neuen Spielers:');if(n&&n.trim()){addPlayer(n.trim()).then(()=>{F.roles[n.trim()]='Villager';render()})}}
+async function submitRound(){
+  const r={id:edit||uid(),date:F.date,winner:F.winner,players:Object.entries(F.roles).map(([p,r])=>({p,r}))};
+  await saveRound(r);const was=edit;edit=null;F=null;tab='hist';render();toast(was?'Gespeichert ✓':'Runde eingetragen ✓')
+}
+function vHist(){
+  const rs=Object.values(state.rounds).sort((a,b)=>b.date.localeCompare(a.date)||b.id.localeCompare(a.id));
+  return `<div class="card">${rs.map(r=>{const n=r.players.filter(p=>p.r==='Impostor').length;return `<div class="hist"><div><b>${fmt(r.date)}</b> · <span class="hint">${r.winner}-Sieg${n===1?' (Solo-Imp.)':''}</span><div style="margin-top:6px">${r.players.map(p=>`<span class="tag ${p.r==='Villager'?'V':'I'} ${p.r===r.winner?'':'x'}">${esc(p.p)}${p.r===r.winner?' +'+pointsFor(r,p).pts:''}</span>`).join('')}</div></div>
+  <div style="white-space:nowrap"><button class="b" onclick="editR('${r.id}')">✏️</button> <button class="b dng" onclick="delR('${r.id}')">🗑</button></div></div>`}).join('')||'<p class="hint">Noch keine Runden.</p>'}<p class="hint">Grün = Villager, rot = Impostor, durchgestrichen = verloren.</p></div>`;
+}
+function editR(id){const r=state.rounds[id];edit=id;F={id,date:r.date,winner:r.winner,roles:Object.fromEntries(r.players.map(p=>[p.p,p.r]))};tab='add';render()}
+async function delR(id){if(confirm('Runde wirklich löschen?')){await delRound(id);render();toast('Gelöscht')}}
+function vSet(){
+  const s=state.settings;
+  return `<div class="card"><b>Punkte</b><div class="row" style="margin-top:10px">
+  ${[['pv','Villager-Sieg'],['pi','Impostor-Sieg (mehrere Imp.)'],['ps','Solo-Impostor-Sieg']].map(([k,t])=>`<div><label>${t}</label><input type="number" min="0" style="width:90px" value="${s[k]}" onchange="state.settings.${k}=+this.value;saveSettings().then(()=>toast('Gespeichert ✓'))"></div>`).join('')}</div>
+  <p class="hint">Gilt rückwirkend für alle Runden und für alle Nutzer.</p></div>
+  <div class="card"><b>Datenbank</b><p class="hint">${db?'Verbunden mit: '+esc(db):'Nicht verbunden (lokaler Modus).'}</p>
+  <div class="row"><input id="dburl" style="flex:1;min-width:240px" placeholder="https://…firebasedatabase.app" value="${esc(db)}"><button class="b pri" onclick="setDb()">Verbinden</button></div>
+  <p class="hint">Tipp: URL oben in der Datei bei <code>DB_URL</code> eintragen, dann gilt sie für alle, die die Datei öffnen.</p></div>
+  <div class="card"><b>Backup</b><div class="row" style="margin-top:10px"><button class="b" onclick="exportCsv()">CSV exportieren</button><button class="b" onclick="exportJson()">JSON-Backup</button></div></div>`;
+}
+function setDb(){db=$('#dburl').value.trim().replace(/\/$/,'');try{localStorage.setItem('tds_db',db)}catch(e){}loaded=false;lastHash='';render();pull()}
+function dl(n,t,m){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:m}));a.download=n;a.click()}
+function exportCsv(){const L=['Runde;Datum;Spieler;Rolle;Solo-Impostor;Gewonnen;Punkte'];Object.values(state.rounds).sort((a,b)=>a.date.localeCompare(b.date)||a.id.localeCompare(b.id)).forEach((r,i)=>r.players.forEach(p=>{const x=pointsFor(r,p);L.push([i+1,fmt(r.date),p.p,p.r,x.solo?'Ja':p.r==='Impostor'?'Nein':'',x.win?'Ja':'Nein',x.pts].join(';'))}));dl('tempel_log.csv','\ufeff'+L.join('\n'),'text/csv')}
+function exportJson(){dl('tempel_backup.json',JSON.stringify(state,null,1),'application/json')}
+
+document.addEventListener('click',e=>{const t=e.target.closest('[data-a]');if(!t||t.disabled)return;const a=t.dataset.a;
+ try{if(a==='tog')tog(t.dataset.n);else if(a==='role')role(t.dataset.n,t.dataset.r);else if(a==='win'){F.winner=t.dataset.r;render()}else if(a==='newp')newP();else if(a==='submit')submitRound()}catch(err){toast('Fehler: '+err.message)}});
+document.addEventListener('change',e=>{if(e.target.dataset.a==='date')F.date=e.target.value});
+window.addEventListener('error',e=>toast('Fehler: '+e.message));
+render();pull();setInterval(pull,4000);
+</script></body></html>
